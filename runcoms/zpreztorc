@@ -31,9 +31,12 @@ zstyle ':prezto:load' pmodule \
   'directory' \
   'spectrum' \
   'utility' \
+  'ssh' \
   'completion' \
   'git' \
   'python' \
+  'syntax-highlighting' \
+  'history-substring-search' \
   'prompt' \
 
 #
