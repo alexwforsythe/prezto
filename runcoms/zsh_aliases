@@ -3,3 +3,6 @@
 # Other alias files
 BASH_ALIASES="$HOME/.bash_aliases"
 [[ -s $BASH_ALIASES ]] && source $BASH_ALIASES
+
+CLOVER_ALIASES="$HOME/.clover_aliases"
+[[ -s $CLOVER_ALIASES ]] && source $CLOVER_ALIASES
