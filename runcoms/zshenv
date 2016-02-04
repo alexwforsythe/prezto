@@ -39,3 +39,6 @@ export PATH=/opt/bin:$PATH
 
 # Heroku
 export PATH="/usr/local/heroku/bin:$PATH"
+
+# Gradle
+export PATH="/opt/gradle-2.3/bin:$PATH"
