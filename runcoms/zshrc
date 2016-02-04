@@ -21,3 +21,7 @@ ZSH_ALIASES="$HOME/.zsh_aliases"
 # Import notifyosd.zsh
 NOTIFY_ZSH="$HOME/.config/notifyosd.zsh/notifyosd.zsh"
 [[ -s $NOTIFY_ZSH ]] && source $NOTIFY_ZSH
+
+# Import base16-shell
+BASE16_SHELL="$HOME/.config/base16-shell/base16-tomorrow.dark.sh"
+[[ -s $BASE16_SHELL ]] && source $BASE16_SHELL
