@@ -1,7 +1,6 @@
 # Aliases
 
 # Other alias files
-if [ -f ~/.bash_aliases ]; then
-  . ~/.bash_aliases
-fi
 
+BASH_ALIASES="$HOME/.bash_aliases"
+[[ -s $BASH_ALIASES ]] && source $BASH_ALIASES
