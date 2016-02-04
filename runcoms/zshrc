@@ -15,10 +15,9 @@ fi
 unsetopt NOMATCH
 
 # Import aliases
-if [ -f ~/.zsh_aliases ]; then
-  . ~/.zsh_aliases
-fi
+ZSH_ALIASES="$HOME/.zsh_aliases"
+[[ -s $ZSH_ALIASES ]] && source $ZSH_ALIASES
 
 # Import notifyosd.zsh
-[ -e $HOME/.config/notifyosd.zsh/notifyosd.zsh ] && . $HOME/.config/notifyosd.zsh/notifyosd.zsh
-
+NOTIFY_ZSH="$HOME/.config/notifyosd.zsh/notifyosd.zsh"
+[[ -s $NOTIFY_ZSH ]] && source $NOTIFY_ZSH
