@@ -29,6 +29,19 @@
 # 15 bright white
 #
 
+# Characters
+SEGMENT_SEPARATOR="\ue0b0"
+PLUSMINUS="\u00b1"
+BRANCH="\ue0a0"
+DETACHED="\u27a6"
+CHECK="\u2713"
+CHECK_ALT="\u2714"
+CROSS="\u2716"
+CROSS_ALT1="\u2717"
+CROSS_ALT2="\u2718"
+LIGHTNING="\u26a1"
+GEAR="\u2699"
+
 # Load dependencies.
 pmodload 'helper'
 
@@ -44,13 +57,27 @@ function prompt_sorin_pwd {
 }
 
 function prompt_sorin_git_info {
+  # if all precmd data is ready
   if (( _prompt_sorin_precmd_async_pid > 0 )); then
-    # Append Git status.
     if [[ -s "$_prompt_sorin_precmd_async_data" ]]; then
+      # causes typeset command to store data in global arrays
       alias typeset='typeset -g'
+
+      # source typeset commands from async data file
       source "$_prompt_sorin_precmd_async_data"
-      RPROMPT+='${git_info:+${(e)git_info[status]}}'
       unalias typeset
+
+      # async data can now be accessed globally
+      # if [[ "$ruby_info" ]]; then
+      #   RPROMPT+=''
+      # fi
+      # if [[ "$python_info" ]]; then
+      #   RPROMPT+='$python_info[virtualenv]'
+      # fi
+      if [[ "$git_info" ]]; then
+        # RPROMPT+='${git_info:+${(e)git_info[branch]}}'
+        RPROMPT+=' ${git_info:+${(e)git_info[status]}}'
+      fi
     fi
 
     # Reset PID.
@@ -62,10 +89,29 @@ function prompt_sorin_git_info {
 }
 
 function prompt_sorin_precmd_async {
+  data=()
+
   # Get Git repository information.
   if (( $+functions[git-info] )); then
     git-info
-    typeset -p git_info >! "$_prompt_sorin_precmd_async_data"
+    data+='git_info'
+  fi
+
+  # # Get Python information.
+  # if (( $+functions[python-info] )); then
+  #   python-info
+  #   data+='python_info'
+  # fi
+
+  # # Get Ruby information.
+  # if (( $+functions[ruby-info] )); then
+  #  ruby-info
+  #  data+='ruby_info'
+  # fi
+
+  if [[ "$data" ]]; then
+    # append typeset statements describing current shell to global var
+    typeset -p $data >! "$_prompt_sorin_precmd_async_data"
   fi
 
   # Signal completion to parent process.
@@ -79,8 +125,18 @@ function prompt_sorin_precmd {
   # Format PWD.
   prompt_sorin_pwd
 
+  # Get Python information.
+  if (( $+functions[python-info] )); then
+    python-info
+  fi
+
+  # if (( $+functions[ruby-info] )); then
+  #  ruby-info
+  # fi  
+
   # Define prompts.
-  RPROMPT='${editor_info[overwrite]}%(?:: %F{1}⏎%f)${VIM:+" %B%F{6}V%f%b"}'
+  RPROMPT='${editor_info[overwrite]}'
+  RPROMPT+='${VIM:+" %B%F{cyan}V%f%b"}'
 
   # Kill the old process of slow commands if it is still running.
   if (( _prompt_sorin_precmd_async_pid > 0 )); then
@@ -89,8 +145,8 @@ function prompt_sorin_precmd {
 
   # Compute slow commands in the background.
   trap prompt_sorin_git_info WINCH
-  prompt_sorin_precmd_async &!
-  _prompt_sorin_precmd_async_pid=$!
+  prompt_sorin_precmd_async &! # run async process as daemon in child thread?
+  _prompt_sorin_precmd_async_pid=$! # set pid of child thread?
 }
 
 function prompt_sorin_setup {
@@ -107,33 +163,45 @@ function prompt_sorin_setup {
   add-zsh-hook precmd prompt_sorin_precmd
 
   # Set editor-info parameters.
-  zstyle ':prezto:module:editor:info:completing' format '%B%F{7}...%f%b'
-  zstyle ':prezto:module:editor:info:keymap:primary' format ' %B%F{1}❯%F{3}❯%F{2}❯%f%b'
-  zstyle ':prezto:module:editor:info:keymap:primary:overwrite' format ' %F{3}♺%f'
-  zstyle ':prezto:module:editor:info:keymap:alternate' format ' %B%F{2}❮%F{3}❮%F{1}❮%f%b'
+  zstyle ':prezto:module:editor:info:completing' format '%B%F{white}...%f%b'
+  zstyle ':prezto:module:editor:info:keymap:primary' format ' %B%F{%(?.red.green)}❱%F{yellow}❱%F{%(?.green.red)}❱%f%b' # failed command
+  zstyle ':prezto:module:editor:info:keymap:primary:overwrite' format ' %B%F{yellow}♻%f%b'
+  zstyle ':prezto:module:editor:info:keymap:alternate' format ' %B%F{%(?.red.green)}❰%F{yellow}❰%F{%(?.green.red)}❰%f%b'
 
   # Set git-info parameters.
   zstyle ':prezto:module:git:info' verbose 'yes'
-  zstyle ':prezto:module:git:info:action' format '%F{7}:%f%%B%F{9}%s%f%%b'
-  zstyle ':prezto:module:git:info:added' format ' %%B%F{2}✚%f%%b'
-  zstyle ':prezto:module:git:info:ahead' format ' %%B%F{13}⬆%f%%b'
-  zstyle ':prezto:module:git:info:behind' format ' %%B%F{13}⬇%f%%b'
-  zstyle ':prezto:module:git:info:branch' format ' %%B%F{2}%b%f%%b'
-  zstyle ':prezto:module:git:info:commit' format ' %%B%F{3}%.7c%f%%b'
-  zstyle ':prezto:module:git:info:deleted' format ' %%B%F{1}✖%f%%b'
-  zstyle ':prezto:module:git:info:modified' format ' %%B%F{4}✱%f%%b'
-  zstyle ':prezto:module:git:info:position' format ' %%B%F{13}%p%f%%b'
-  zstyle ':prezto:module:git:info:renamed' format ' %%B%F{5}➜%f%%b'
-  zstyle ':prezto:module:git:info:stashed' format ' %%B%F{6}✭%f%%b'
-  zstyle ':prezto:module:git:info:unmerged' format ' %%B%F{3}═%f%%b'
-  zstyle ':prezto:module:git:info:untracked' format ' %%B%F{7}◼%f%%b'
-  zstyle ':prezto:module:git:info:keys' format \
-    'status' '$(coalesce "%b" "%p" "%c")%s%A%B%S%a%d%m%r%U%u'
+  zstyle ':prezto:module:git:info:branch' format '%B%F{green}%f %F{green}%b%f%%b'
+  zstyle ':prezto:module:git:info:action' format '%B%F{red}:%s%f%b'
+  zstyle ':prezto:module:git:info:ahead' format ' %%B%F{green}⏶%f %F{yellow}%A%f%%b'
+  zstyle ':prezto:module:git:info:behind' format ' %%B%F{red}⏷%f %F{yellow}%B%f%%b'
+  zstyle ':prezto:module:git:info:commit' format '%B%F{yellow}:%.7c%f%b'
+  zstyle ':prezto:module:git:info:clean' format ' %B%F{green}✔%f%b' # needs verbose
+
+  # slow params
+  zstyle ':prezto:module:git:info:dirty' format ' %B%F{red}✖%f%b'
+  zstyle ':prezto:module:git:info:stashed' format ' %B%F{cyan}✱%f%b'
+
+  # combine git keys
+  zstyle ':prezto:module:git:info:keys' format 'status' '%b%s%c%A%B%S%C%D'
+
+  # %v - virtualenv name.
+  zstyle ':prezto:module:python:info:virtualenv' format '%B%F{green}[%v]%f%b '
+
+  # %v - ruby version.
+  # zstyle ':prezto:module:ruby:info:version' format '<%v> '
 
   # Define prompts.
-  PROMPT='${SSH_TTY:+"%F{9}%n%f%F{7}@%f%F{3}%m%f "}%F{4}${_prompt_sorin_pwd}%(!. %B%F{1}#%f%b.)${editor_info[keymap]} '
+  PROMPT='${SSH_TTY:+"%F{red}%n%f%F{white}@%f%F{yellow}%m%f "}' # todo: ???
+  # PROMPT+='%B%F{red}[${ruby_info[version]}]%f%b' # ruby version
+  PROMPT+='${python_info[virtualenv]}' # virtualenv
+  PROMPT+='%B%F{blue}${_prompt_sorin_pwd}%f%b' # pwd
+  PROMPT+='%(!. %B%F{red}#%f%b.)' # todo: sudo indicator
+  # PROMPT+='%(?.. %B%F{red}✘%f%b)' # failed command
+  PROMPT+='${editor_info[keymap]} ' # editor arrows
+
   RPROMPT=''
-  SPROMPT='zsh: correct %F{1}%R%f to %F{2}%r%f [nyae]? '
+
+  SPROMPT='zsh: correct %F{red}%R%f to %F{green}%r%f [nyae]? '
 }
 
 function prompt_sorin_preview {

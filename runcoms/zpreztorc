@@ -38,6 +38,7 @@ zstyle ':prezto:load' pmodule \
   'command-not-found' \
   'git' \
   'python' \
+  'ruby'
 
 #
 # Editor
@@ -54,7 +55,7 @@ zstyle ':prezto:module:editor' dot-expansion 'yes'
 #
 
 # Ignore submodules when they are 'dirty', 'untracked', 'all', or 'none'.
-# zstyle ':prezto:module:git:status:ignore' submodules 'all'
+zstyle ':prezto:module:git:status:ignore' submodules 'all'
 
 #
 # GNU Utility
@@ -90,7 +91,7 @@ zstyle ':prezto:module:editor' dot-expansion 'yes'
 # Set the prompt theme to load.
 # Setting it to 'random' loads a random theme.
 # Auto set to 'off' on dumb terminals.
-zstyle ':prezto:module:prompt' theme 'alex'
+zstyle ':prezto:module:prompt' theme 'sorin'
 
 #
 # Ruby
