@@ -14,14 +14,18 @@ fi
 
 unsetopt NOMATCH
 
-# Import aliases
+# Aliases
 ZSH_ALIASES="$HOME/.zsh_aliases"
 [[ -s $ZSH_ALIASES ]] && source $ZSH_ALIASES
 
-# Import notifyosd.zsh
+# NotifyOSD
 NOTIFY_ZSH="$HOME/.config/notifyosd.zsh/notifyosd.zsh"
 [[ -s $NOTIFY_ZSH ]] && source $NOTIFY_ZSH
 
-# Import base16-shell
+# Base16 Shell
 # BASE16_SHELL="$HOME/.config/base16-shell/base16-tomorrow.dark.sh"
 # [[ -s $BASE16_SHELL ]] && source $BASE16_SHELL
+
+# Uber
+UBER_PROFILE="$HOME/.uber_profile"
+[[ -s $UBER_PROFILE ]] && source $UBER_PROFILE
