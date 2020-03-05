@@ -12,16 +12,16 @@ fi
 
 
 ### Java
-export JAVA_HOME=$(readlink -f /usr/bin/javac | sed "s:/bin/javac::")
+export JAVA_HOME=$(readlink /usr/bin/javac | sed "s:/bin/javac::")
 
 
 ### Python
 export PYTHONSTARTUP=$HOME/.pystartup
 
 # virtualenvwrapper
-export WORKON_HOME=$HOME/.virtualenvs
-export PROJECT_HOME=$HOME/workspace
-source /usr/local/bin/virtualenvwrapper.sh
+WORKON_HOME=$HOME/.virtualenvs
+PROJECT_HOME=$HOME/workspace
+#/usr/local/bin/virtualenvwrapper.sh
 
 
 ### Ruby
