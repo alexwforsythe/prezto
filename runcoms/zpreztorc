@@ -46,6 +46,7 @@ zstyle ':prezto:load' pmodule \
   'git' \
   'python' \
   'tmux' \
+  'zsh-nvm' \
 
 #
 # Autosuggestions
