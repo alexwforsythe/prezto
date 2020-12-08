@@ -36,16 +36,16 @@ zstyle ':prezto:load' pmodule \
   'directory' \
   'spectrum' \
   'utility' \
-  'ssh' \
   'completion' \
   'syntax-highlighting' \
   'history-substring-search' \
   'autosuggestions' \
   'prompt' \
   'command-not-found' \
+  'tmux' \
+  'ssh' \
   'git' \
   'python' \
-  'tmux' \
   'zsh-nvm' \
 
 #

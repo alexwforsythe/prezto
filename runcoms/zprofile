@@ -75,3 +75,5 @@ fi
 # https://superuser.com/questions/187639/zsh-not-hitting-profile
 PROFILE="$HOME/.profile"
 [[ -s $PROFILE ]] && source $PROFILE
+
+export NVM_LAZY_LOAD=true
