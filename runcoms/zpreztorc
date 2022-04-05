@@ -44,7 +44,7 @@ zstyle ':prezto:load' pmodule \
   'prompt' \
   'command-not-found' \
   'git' \
-  'python' \
+  # 'python' \
   'tmux' \
 
 #
@@ -137,6 +137,8 @@ zstyle ':prezto:module:prompt' theme 'powerlevel10k'
 #
 # Python
 #
+
+# zstyle ':prezto:module:python' skip-virtualenvwrapper-init 'on'
 
 # Auto switch the Python virtualenv on directory change.
 # zstyle ':prezto:module:python:virtualenv' auto-switch 'yes'
