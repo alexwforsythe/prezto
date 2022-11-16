@@ -1,6 +1,4 @@
-# Custom zsh aliases
+# shellcheck shell=bash
 
-# Other alias files
-
-BASH_ALIASES="$HOME/.bash_aliases"
-[[ -s $BASH_ALIASES ]] && source $BASH_ALIASES
+# shellcheck source=/dev/null
+[ -s "$HOME/.bash_aliases" ] && . "$HOME/.bash_aliases"
