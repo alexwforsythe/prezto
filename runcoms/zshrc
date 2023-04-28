@@ -1,34 +1,262 @@
+#!/usr/bin/env zsh
+
+#
+# ~/.zshrc: executes commands at the start of an interactive session
+#
+# See https://github.com/zsh-users/zsh/blob/master/StartupFiles/zshrc
+#
+
+# @note Uncomment the following line to profile startup time.
+# zmodload zsh/zprof
+
+# @todo move dotfiles into a zdotdir, maybe move this back to zshenv?
+# export ZDOTDIR=$HOME/.dotfiles/zdotdir
+
+# Ensure path arrays do not contain duplicates.
+typeset -gU cdpath fpath mailpath path
+
+# Set the list of directories that Zsh searches for programs.
+path=(
+  $HOME/{,s}bin(N)
+  /opt/{homebrew,local}/{,s}bin(N)
+  /usr/local/{,s}bin(N)
+  $path
+)
+
+#
+# Instant prompt
+#
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+#
+# Activate direnv here for compatibility:
+# https://github.com/romkatv/powerlevel10k/blob/master/README.md#how-do-i-initialize-direnv-when-using-instant-prompt
+#
+# @note tmux sessions should be created after instant prompt because tmux
+# generates output to parent process:
+# https://github.com/romkatv/powerlevel10k/issues/1203
+p10k_cache="${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+(( ${+commands[direnv]} )) && emulate zsh -c "$(direnv export zsh)"
+[[ -r "$p10k_cache" ]] && . "$p10k_cache"
+(( ${+commands[direnv]} )) && emulate zsh -c "$(direnv hook zsh)"
+
+# Load bash profile to share environment variables, etc.
+#
+# zsh is usually compatible with bash profiles, but no the other way around:
+#  - https://superuser.com/questions/187639/zsh-not-hitting-profile
+if [[ ! -r $HOME/.profile ]] || ! . $HOME/.profile ; then
+  printf '[error] %s\n' "file not loaded: $HOME/.profile"
+  return 1
+fi
+log:debug "file loaded: $HOME/.profile"
+
+#
+# Prezto pre-setup
+#
+
+# Enable cdr for use with zsh-autocomplete:
+# https://github.com/marlonrichert/zsh-autocomplete/issues/432
+autoload -Uz cdr
+
+# Use fuzzy searching for history substring search
+export HISTORY_SUBSTRING_SEARCH_FUZZY=1
+
+# Rename bash completions for git so zsh loads its own (better) ones instead:
+# https://stackoverflow.com/questions/65833258/git-completion-on-zsh-not-listing-ambiguous-options-on-macos
+brew_completions_dir="$(brew --prefix)/share/zsh/site-functions"
+bash_completions_git="$brew_completions_dir/_git"
+if [[ -f $bash_completions_git ]]; then
+  mv $bash_completions_git "$brew_completions_dir/git_renamed"
 fi
 
+# Load bash completions because there might be some that zsh doesn't have. We
+# load these before prezto so the completion plugin will override any
+# conflicting definitions, because zsh completions are usually better.
 #
-# Executes commands at the start of an interactive session.
+# @audit does this also override default zsh completions? if so, maybe we should
+# only import specific bash completion definitions
+if ! autoload -Uz bashcompinit || ! bashcompinit; then
+  log:error "failed to load bash completions"
+fi
+
+# zsh-autocomplete: this config must be set before loading the plugin and cannot
+# be changed at runtime.
+zstyle ':autocomplete:*' widget-style menu-select
+# complete-word: (Shift-)Tab inserts the top (bottom) completion.
+# menu-complete: Press again to cycle to next (previous) completion.
+# menu-select:   Same as `menu-complete`, but updates selection in menu.
+
 #
-# Authors:
-#   Sorin Ionescu <sorin.ionescu@gmail.com>
+# Plugins
 #
 
-unsetopt NOMATCH
+source:file "${ZDOTDIR:-$HOME}/.config/dotfiles/submodules/prezto/init.zsh"
+# Load p10k immediately after plugins for a fast prompt.
+# https://github.com/romkatv/zsh-bench
+source:file $XDG_CONFIG_HOME/dotfiles/configs/p10k.zsh
+source:file $XDG_CONFIG_HOME/dotfiles/configs/shellrc.sh
 
-source_files=(
-  # @todo how to support dynamic path?
-  "$HOME/.config/dotfiles/modules/prezto/init.zsh"
-  # To customize prompt, run `p10k configure` or edit zsh/.p10k.zsh.
-  "$HOME/.p10k.zsh"
-  "$HOME/.zsh_aliases"
+run:if-cmd zoxide eval $(zoxide init zsh)
 
-  # Work
-  "$HOME/.work_aliases"
-  "$HOME/co/backend/bin/taskrunner-completion.bash"
-)
+# fzf
 
-for f in "${source_files[@]}"; do
-  [ -s "$f" ] && source "$f"
+setup-fzf "${ZDOTDIR:-$HOME}/.fzf.zsh"
+run:if-cmd fzf source:file $XDG_CONFIG_HOME/dotfiles/configs/fzf-tab-rc.zsh
+
+source:file $XDG_CONFIG_HOME/dotfiles/configs/zsh-autocomplete-rc.zsh
+
+#
+# Completions
+#
+
+unsetopt completeinword
+
+# Override the match (ma) color to be more subtle--fg white, bg gray, bold--to
+# match our fzf theme.
+zstyle ':completion:*' list-colors "ma=38;5;251;48;5;237;1"
+
+#
+# Key bindings
+#
+
+# @todo
+#  - history substring search
+#   - up/down line
+#   - accept
+#   - accept and enter
+
+# Remove mode switching delay.
+export KEYTIMEOUT=1
+
+# Set cursor mode based on the current keymap.
+#
+# See:
+#  - https://thevaluable.dev/zsh-install-configure-mouseless/
+#  - https://unix.stackexchange.com/questions/547/make-my-zsh-prompt-show-mode-in-vi-mode
+#
+# For cursor shapes, see:
+# https://ttssh2.osdn.jp/manual/4/en/usage/tips/vim.html
+set-cursor-mode() {
+    case $KEYMAP in
+      vicmd) echo -ne '\e[1 q' ;;      # blinking block
+      main|viins) echo -ne '\e[5 q' ;; # blinking beam
+      *) echo -ne '\e[3 q' ;;          # blinking underline
+    esac
+}
+
+# Extend (don't override) the built-in hooks to set the cursor mode.
+# https://zsh.sourceforge.io/Doc/Release/User-Contributions.html
+autoload -Uz add-zle-hook-widget
+add-zle-hook-widget zle-keymap-select set-cursor-mode
+add-zle-hook-widget zle-line-init set-cursor-mode
+
+# Open tmux launcher when space is pressed in vicmd mode (like VSpaceCode).
+# @todo move this to tmux-launcher.plugin.zsh and add zstyle option to configure
+# key
+tmux-launcher () { tmux displaytsm ; }
+zle -N tmux-launcher
+bindkey -M vicmd " " tmux-launcher
+
+#
+# Expand aliases when pressing space. Use ctrl-space to skip expansion.
+# glob-alias is defined by the editor plugin.
+#
+# https://github.com/rothgar/mastering-zsh/blob/master/docs/helpers/aliases.md#automatically-expand-aliases
+#
+
+setopt ALIASES # Expand aliases.
+# setopt GLOB_COMPLETE # Complete globs instead of inserting them.
+
+# # space expands all aliases, including global
+# bindkey -M emacs " " glob-alias
+# bindkey -M viins " " glob-alias
+
+# # control-space to make a normal space
+# bindkey -M emacs "^ " magic-space
+# bindkey -M viins "^ " magic-space
+
+# # normal space during searches
+# bindkey -M isearch " " magic-space
+
+#
+# Add vim key bindings for completion menus.
+#
+# Note: must be loaded after compinit (i.e. prezto/init.zsh)
+#
+# https://thevaluable.dev/zsh-install-configure-mouseless/
+#
+
+zmodload zsh/complist
+# Toggle interactive mode
+# bindkey -M menuselect '^F' vi-insert
+bindkey -M menuselect '^I' vi-down-line-or-history
+# bindkey -M menuselect '^H' vi-backward-char
+# bindkey -M menuselect '^J' vi-down-line-or-history
+# bindkey -M menuselect '^K' vi-up-line-or-history
+# bindkey -M menuselect '^L' vi-forward-char
+
+#
+# Add vim surround key bindings
+#
+# https://thevaluable.dev/zsh-install-configure-mouseless/
+#
+
+autoload -Uz surround
+zle -N delete-surround surround
+zle -N add-surround surround
+zle -N change-surround surround
+bindkey -M vicmd cs change-surround
+bindkey -M vicmd ds delete-surround
+bindkey -M vicmd ys add-surround
+bindkey -M visual S add-surround
+
+#
+# zsh-bracketed
+#
+# https://github.com/zsh-users/zsh/blob/master/Functions/Zle/select-quoted
+#
+
+autoload -U select-quoted
+zle -N select-quoted
+for m in visual viopp; do
+  for c in {a,i}{\',\",\`}; do
+    bindkey -M $m $c select-quoted
+  done
 done
 
-# @note Uncomment to print startup time.
+#
+# zsh-quoted
+#
+# https://github.com/zsh-users/zsh/blob/master/Functions/Zle/select-bracketed
+#
+
+autoload -U select-bracketed
+zle -N select-bracketed
+for m in visual viopp; do
+  for c in {a,i}${(s..)^:-'()[]{}<>bB'}; do
+    bindkey -M $m $c select-bracketed
+  done
+done
+
+# History substring search
+bindkey -M viins '^[k' history-substring-search-up
+bindkey -M viins '^[j' history-substring-search-down
+bindkey -M vicmd 'k' history-substring-search-up
+bindkey -M vicmd 'j' history-substring-search-down
+bindkey -M vicmd "?" history-incremental-search-backward
+bindkey -M vicmd "/" history-incremental-search-forward
+
+#
+# Fun
+#
+
+# @todo tetris: https://github.com/rothgar/mastering-zsh/blob/master/docs/helpers/widgets.md
+
+#
+# ---
+#
+
+# @note Uncomment the following line to print startup time.
 # zprof

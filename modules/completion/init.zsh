@@ -64,6 +64,10 @@ else
   compinit -i -d "$_comp_path"
   # Keep $_comp_path younger than cache time even if it isn't regenerated.
   touch "$_comp_path"
+
+  # Recompile the completion dump in the background to increase startup speed.
+  autoload -Uz zrecompile
+  zrecompile -p -M "$_comp_path"
 fi
 unset _comp_path
 
