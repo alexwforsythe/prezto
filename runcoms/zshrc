@@ -15,13 +15,26 @@
 # Ensure path arrays do not contain duplicates.
 typeset -gU cdpath fpath mailpath path
 
+# @todo set up path in .profile
 # Set the list of directories that Zsh searches for programs.
 path=(
-  $HOME/{,s}bin(N)
-  /opt/{homebrew,local}/{,s}bin(N)
-  /usr/local/{,s}bin(N)
+  $HOME/bin
+  $HOME/sbin
+  /usr/bin
+  /usr/sbin
+  /usr/local/bin
+  /usr/local/sbin
+  /opt/local/bin
+  /opt/local/sbin
+  /opt/homebrew/bin
+  /opt/homebrew/sbin
   $path
 )
+
+eval $(brew shellenv)
+gnubin="$HOMEBREW_PREFIX/opt/coreutils/libexec/gnubin"
+[ ! -d "$gnubin" ] && brew install coreutils
+path=($gnubin $path)
 
 #
 # Instant prompt
@@ -44,8 +57,10 @@ p10k_cache="${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 
 # Load bash profile to share environment variables, etc.
 #
-# zsh is usually compatible with bash profiles, but no the other way around:
-#  - https://superuser.com/questions/187639/zsh-not-hitting-profile
+# zsh is usually compatible with bash profiles, but not the other way around:
+# https://superuser.com/questions/187639/zsh-not-hitting-profile
+#
+# @todo move to XDG_CONFIG_HOME/.profile
 if [[ ! -r $HOME/.profile ]] || ! . $HOME/.profile ; then
   printf '[error] %s\n' "file not loaded: $HOME/.profile"
   return 1
@@ -53,7 +68,7 @@ fi
 log:debug "file loaded: $HOME/.profile"
 
 #
-# Prezto pre-setup
+# Pre-plugin Setup
 #
 
 # Enable cdr for use with zsh-autocomplete:
@@ -63,22 +78,31 @@ autoload -Uz cdr
 # Use fuzzy searching for history substring search
 export HISTORY_SUBSTRING_SEARCH_FUZZY=1
 
-# Rename bash completions for git so zsh loads its own (better) ones instead:
-# https://stackoverflow.com/questions/65833258/git-completion-on-zsh-not-listing-ambiguous-options-on-macos
-brew_completions_dir="$(brew --prefix)/share/zsh/site-functions"
-bash_completions_git="$brew_completions_dir/_git"
-if [[ -f $bash_completions_git ]]; then
-  mv $bash_completions_git "$brew_completions_dir/git_renamed"
+# Homebrew completions
+if [[ -n $HOMEBREW_PREFIX ]]; then
+  # Register homebrew completions so they'll be loaded by the completion plugin.
+  # @todo this should be done by the completion plugin, maybe try updating it?
+  # @todo I needed to run these commands to fix zcompinit security issues from
+  # docker completions:
+  # compaudit | xargs chown -R $(whoami)
+  # compaudit | xargs chmod go-w
+  fpath+=$HOMEBREW_PREFIX/share/zsh/site-functions
+
+  # Rename bash completions for git so the completion plugin loads its own
+  # (better) ones instead:
+  # https://stackoverflow.com/questions/65833258/git-completion-on-zsh-not-listing-ambiguous-options-on-macos
+  brew_completions_dir="$HOMEBREW_PREFIX/share/zsh/site-functions"
+  bash_completions_git="$brew_completions_dir/_git"
+  if [[ -f $bash_completions_git ]]; then
+    mv $bash_completions_git "$brew_completions_dir/git_renamed"
+  fi
 fi
 
 # Load bash completions because there might be some that zsh doesn't have. We
 # load these before prezto so the completion plugin will override any
 # conflicting definitions, because zsh completions are usually better.
-#
-# @audit does this also override default zsh completions? if so, maybe we should
-# only import specific bash completion definitions
 if ! autoload -Uz bashcompinit || ! bashcompinit; then
-  log:error "failed to load bash completions"
+  log:warn "failed to load bash completions"
 fi
 
 # zsh-autocomplete: this config must be set before loading the plugin and cannot
@@ -92,18 +116,22 @@ zstyle ':autocomplete:*' widget-style menu-select
 # Plugins
 #
 
-source:file "${ZDOTDIR:-$HOME}/.config/dotfiles/submodules/prezto/init.zsh"
+source:file "$XDG_CONFIG_HOME/dotfiles/submodules/prezto/init.zsh"
 # Load p10k immediately after plugins for a fast prompt.
 # https://github.com/romkatv/zsh-bench
 source:file $XDG_CONFIG_HOME/dotfiles/configs/p10k.zsh
 source:file $XDG_CONFIG_HOME/dotfiles/configs/shellrc.sh
-
-run:if-cmd zoxide eval $(zoxide init zsh)
+eval:if-cmd zoxide zoxide init zsh
 
 # fzf
+#
+# https://thevaluable.dev/fzf-shell-integration/
 
-setup-fzf "${ZDOTDIR:-$HOME}/.fzf.zsh"
-run:if-cmd fzf source:file $XDG_CONFIG_HOME/dotfiles/configs/fzf-tab-rc.zsh
+source:file "$FZF_DIR/shell/completion.zsh"
+source:file "$FZF_DIR/shell/key-bindings.zsh"
+source:file $XDG_CONFIG_HOME/dotfiles/configs/fzf-tab-rc.zsh
+
+# zsh-autocomplete
 
 source:file $XDG_CONFIG_HOME/dotfiles/configs/zsh-autocomplete-rc.zsh
 
@@ -111,6 +139,7 @@ source:file $XDG_CONFIG_HOME/dotfiles/configs/zsh-autocomplete-rc.zsh
 # Completions
 #
 
+# Only show completions for exact matches.
 unsetopt completeinword
 
 # Override the match (ma) color to be more subtle--fg white, bg gray, bold--to
@@ -127,7 +156,7 @@ zstyle ':completion:*' list-colors "ma=38;5;251;48;5;237;1"
 #   - accept
 #   - accept and enter
 
-# Remove mode switching delay.
+# Remove mode switching delay for vicmd and viins.
 export KEYTIMEOUT=1
 
 # Set cursor mode based on the current keymap.
@@ -149,13 +178,18 @@ set-cursor-mode() {
 # Extend (don't override) the built-in hooks to set the cursor mode.
 # https://zsh.sourceforge.io/Doc/Release/User-Contributions.html
 autoload -Uz add-zle-hook-widget
-add-zle-hook-widget zle-keymap-select set-cursor-mode
 add-zle-hook-widget zle-line-init set-cursor-mode
+
+# Natural text editing
+# @todo can we copy some from iterm2's key mappings?
+# bindkey "\e[1;3C" forward-word
+# bindkey "\e[1;3D" backward-word
+# bindkey "\e[[3~" forward-delete-char # @todo delete word, add forward delete
 
 # Open tmux launcher when space is pressed in vicmd mode (like VSpaceCode).
 # @todo move this to tmux-launcher.plugin.zsh and add zstyle option to configure
 # key
-tmux-launcher () { tmux displaytsm ; }
+tmux-launcher () { tmux show-action-menu-root ; }
 zle -N tmux-launcher
 bindkey -M vicmd " " tmux-launcher
 
@@ -169,14 +203,6 @@ bindkey -M vicmd " " tmux-launcher
 setopt ALIASES # Expand aliases.
 # setopt GLOB_COMPLETE # Complete globs instead of inserting them.
 
-# # space expands all aliases, including global
-# bindkey -M emacs " " glob-alias
-# bindkey -M viins " " glob-alias
-
-# # control-space to make a normal space
-# bindkey -M emacs "^ " magic-space
-# bindkey -M viins "^ " magic-space
-
 # # normal space during searches
 # bindkey -M isearch " " magic-space
 
@@ -188,29 +214,32 @@ setopt ALIASES # Expand aliases.
 # https://thevaluable.dev/zsh-install-configure-mouseless/
 #
 
+# Load complist for access to the menuselect keymap.
 zmodload zsh/complist
 # Toggle interactive mode
 # bindkey -M menuselect '^F' vi-insert
-bindkey -M menuselect '^I' vi-down-line-or-history
-# bindkey -M menuselect '^H' vi-backward-char
-# bindkey -M menuselect '^J' vi-down-line-or-history
-# bindkey -M menuselect '^K' vi-up-line-or-history
-# bindkey -M menuselect '^L' vi-forward-char
+# @todo can we just globally map these to arrow keys?
+bindkey -M menuselect '^h' backward-char
+bindkey -M menuselect '^j' down-line-or-history
+bindkey -M menuselect '^k' up-line-or-history
+bindkey -M menuselect '^l' forward-char
 
 #
-# Add vim surround key bindings
+# vim-surround
 #
 # https://thevaluable.dev/zsh-install-configure-mouseless/
 #
 
 autoload -Uz surround
-zle -N delete-surround surround
+
 zle -N add-surround surround
 zle -N change-surround surround
-bindkey -M vicmd cs change-surround
-bindkey -M vicmd ds delete-surround
+zle -N delete-surround surround
+
 bindkey -M vicmd ys add-surround
 bindkey -M visual S add-surround
+bindkey -M vicmd cs change-surround
+bindkey -M vicmd ds delete-surround
 
 #
 # zsh-bracketed
@@ -241,12 +270,14 @@ for m in visual viopp; do
 done
 
 # History substring search
-bindkey -M viins '^[k' history-substring-search-up
-bindkey -M viins '^[j' history-substring-search-down
-bindkey -M vicmd 'k' history-substring-search-up
-bindkey -M vicmd 'j' history-substring-search-down
-bindkey -M vicmd "?" history-incremental-search-backward
-bindkey -M vicmd "/" history-incremental-search-forward
+# @todo trigger history menu or fzf?
+# bindkey -M viins "$key_info[Control]K" history-substring-search-up
+# bindkey -M viins "$key_info[Control]J" history-substring-search-down
+bindkey -M viins "^k" up-line-or-search
+bindkey -M viins "^j" down-line-or-search
+
+# @todo history-incremental-search doesn't trigger with ^r (even with fzf
+# disabled)
 
 #
 # Fun
