@@ -51,7 +51,8 @@ zstyle ':prezto:load' pmodule \
   'directory' \
   'editor' \
   'command-not-found' \
-  'ssh'
+  'ssh' \
+  'docker'
 # 'python' \
 # 'forgit' \
 # 'fzf-tab'
