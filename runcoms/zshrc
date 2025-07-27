@@ -1,4 +1,5 @@
 #!/usr/bin/env zsh
+# shellcheck shell=bash
 
 #
 # ~/.zshrc: executes commands at the start of an interactive session
