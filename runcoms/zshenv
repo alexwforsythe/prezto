@@ -18,7 +18,7 @@ unsetopt globalrcs
 # unsetopt globalexport
 
 # Load shared shell environment.
-if [ -r "${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/configs/env.sh" ]; then
+if [ -r "${XDG_CONFIG_HOME:-$HOME/.config}/shell/env.sh" ]; then
   # shellcheck disable=1091
-  source "${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/configs/env.sh"
+  source "${XDG_CONFIG_HOME:-$HOME/.config}/shell/env.sh"
 fi

@@ -4,8 +4,7 @@
 #
 # ~/.zshrc: sourced in interactive shells
 #
-#  - Should set up aliases, functions, options, key bindings, etc.
-#  - Example: https://github.com/zsh-users/zsh/blob/master/StartupFiles/zshrc
+#  - Should set up options, key bindings, functions, aliases, etc.
 #
 # Guides:
 #  - https://zsh.sourceforge.io/Intro/intro_3.html
@@ -78,7 +77,7 @@ typeset -gU cdpath fpath mailpath manpath path
 # Register user funcs, which can be called after running `autoload $func` or
 # invoked as scripts.
 # https://zsh.sourceforge.io/Intro/intro_4.html
-fpath+=$XDG_CONFIG_HOME/dotfiles/configs/zfuncs
+fpath+=$XDG_CONFIG_HOME/shell/zsh/functions
 
 # @audit
 # eval "$(brew shellenv)"
@@ -168,20 +167,20 @@ zstyle ':autocomplete:*' widget-style menu-select
 # Plugins
 #
 
-source:file "$XDG_CONFIG_HOME/dotfiles/submodules/prezto/init.zsh"
+source:file "$DOTFILES_DIR/submodules/prezto/init.zsh"
 # Load p10k immediately after plugins for a fast prompt.
 # https://github.com/romkatv/zsh-bench
-source:file "$XDG_CONFIG_HOME/dotfiles/configs/p10k.zsh"
-source:file "$XDG_CONFIG_HOME/dotfiles/configs/shellrc.sh"
+source:file "$XDG_CONFIG_HOME/shell/zsh/p10k.zsh"
+source:file "$XDG_CONFIG_HOME/shell/shellrc.sh"
 
 # fzf
 # https://thevaluable.dev/fzf-shell-integration/
 source:file "$FZF_DIR/shell/completion.zsh" # @audit-ok
 source:file "$FZF_DIR/shell/key-bindings.zsh" # @audit-ok
-# source:file "$XDG_CONFIG_HOME/dotfiles/configs/fzf-tab-rc.zsh"
+# source:file "$XDG_CONFIG_HOME/shell/zsh/fzf-tab-rc.zsh"
 
 # zsh-autocomplete
-source:file "$XDG_CONFIG_HOME/dotfiles/configs/zsh-autocomplete-rc.zsh"
+source:file "$XDG_CONFIG_HOME/shell/zsh/zsh-autocomplete-rc.zsh"
 
 # cdr
 # https://zsh.sourceforge.io/Doc/Release/User-Contributions.html#Recent-Directories
@@ -364,7 +363,7 @@ run:if-cmd gcloud autoload -Uz gcloud-purge
 # Aliases
 #
 
-source:file "$XDG_CONFIG_HOME/dotfiles/configs/aliases.zsh"
+source:file "$XDG_CONFIG_HOME/shell/zsh/aliases.zsh"
 
 # @note Uncomment the following line to print startup time.
 # zprof
