@@ -17,6 +17,8 @@ unsetopt globalrcs
 # @todo only export with EXPORT
 # unsetopt globalexport
 
-# @todo files in runcoms/ aren't named correctly for this
-# export ZDOTDIR=${ZDOTDIR:-${$XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/submodules/prezto/runcoms}
-export ZDOTDIR=${ZDOTDIR:-${XDG_CONFIG_HOME:-$HOME}}
+# Load shared shell environment.
+if [ -r "${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/configs/env.sh" ]; then
+  # shellcheck disable=1091
+  source "${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/configs/env.sh"
+fi
